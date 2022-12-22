@@ -1,0 +1,85 @@
+#!/bin/bash
+
+RED="\033[91m"
+GREEN="\033[92m"
+YELLOW="\033[93m"
+GREY="\033[90m"
+PURPLE="\033[95m"
+ENDC="\033[0m"
+
+DOCKER_PROJECT_NAME="kafkabox"
+
+docker_wait_until_healthy_or_none(){
+  local wait=${1}
+  local total_wait=${2}
+
+  if [[ "$wait" -ge "$total_wait" ]]; then
+      echo "docker_wait ran out of time, exit 1"
+      exit 1
+  fi
+  for starting in $(docker ps --filter health=starting -q); do
+    sleep 10
+    docker_wait_until_healthy_or_none $((wait+10)) $total_wait
+  done
+
+  for unhealthy in $(docker ps --filter health=unhealthy -q); do
+    sleep 10
+    docker_wait_until_healthy_or_none $((wait+10)) $total_wait
+  done
+  echo "docker_wait success"
+  exit 0
+}
+
+docker_validate(){
+  #containers exited
+  exitedContainers=$(docker ps --filter status=exited -q)
+  #containers exited with 0 exitcode (valid exit)
+  validExitedContainers=$(docker ps --all --filter exited=0 -q)
+  #if there is a diff between above it means one or more containers exited unhealthy
+  if [[ "$exitedContainers" != "$validExitedContainers" ]]; then
+      echo "docker_validate fail"
+      exit 1
+  fi
+  echo "docker_validate success"
+  exit 0
+}
+
+docker_compose_up() {
+    COMPOSE_HTTP_TIMEOUT=360 USERID=$(id -u):$(id -g) docker-compose -f docker-compose.yml --project-name ${DOCKER_PROJECT_NAME} up -d --build "$@"
+    docker_wait_until_healthy_or_none 0 180
+    docker ps -a
+    echo "---output of stopped containers---"
+    for container in $(docker ps --filter status=exited -q); do
+        echo "${container}"
+        docker logs "${container}"
+    done
+    docker_validate
+}
+
+stop_and_clean_docker_world() {
+    clear
+    docker-compose -f docker-compose.yml --project-name ${DOCKER_PROJECT_NAME} down -v || true
+    docker-compose -f docker-compose.yml --project-name ${DOCKER_PROJECT_NAME} rm --force || true
+    docker stop $(docker ps -a -q) || true
+    docker rm $(docker ps -a -q) || true
+    remove_image
+}
+
+prepare_config_files() {
+    sed -e "s/\${IP}/${DOCKER_HOST}/g" ./docker/prometheus/prometheus_template.yml > ./docker/prometheus/prometheus.yml
+    sed -e "s/\${IP}/${DOCKER_HOST}/g" ./docker/grafana/datasources/datasources_template.yaml > ./docker/grafana/datasources/datasources.yaml
+    sed -e "s/\${IP}/${DOCKER_HOST}/g" ./docker/nginx/default_template.conf > ./docker/nginx/default.conf
+}
+
+remove_container_if_exists() {
+    local name=${1}
+    if [ "$(docker ps -q -f name=${name})" ]; then
+        #docker stop ${name}
+        docker rm -f /${name}
+    fi
+}
+
+
+COMMAND=$1
+shift
+${COMMAND} $@

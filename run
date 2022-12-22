@@ -1,0 +1,20 @@
+#!/bin/bash
+
+SCRIPT_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+command=$1
+shift
+
+case ${command} in
+"kafka")
+  ./docker/runner docker_compose_up
+  ;;
+
+"stop")
+  ./docker/runner stop_and_clean_docker_world
+  ;;
+
+*)
+  echo 'Invalid command'
+  exit 1
+  ;;
+esac
