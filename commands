@@ -1,0 +1,1 @@
+kcat -b localhost:9092 -t random-b-strings -P

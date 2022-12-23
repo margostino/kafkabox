@@ -11,6 +11,9 @@ import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Produced;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+import org.slf4j.helpers.BasicMDCAdapter;
+import org.slf4j.spi.MDCAdapter;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,7 +21,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
@@ -55,10 +57,35 @@ public class KafkaStreamsApplication {
 
         builder
                 .stream(inputTopic, Consumed.with(stringSerde, stringSerde))
-                .peek((k, v) -> logger.info("Observed event: {}", v))
+                .peek((k, v) -> {
+                    MDC.put("some", "test");
+                    String s = MDC.get("some");
+                    logger.info("Observed event: {}", v);
+                })
                 .mapValues(s -> s.toUpperCase())
                 .peek((k, v) -> logger.info("Transformed event: {}", v))
                 .to(outputTopic, Produced.with(stringSerde, stringSerde));
+
+        builder
+                .stream("random-b-strings", Consumed.with(stringSerde, stringSerde))
+                .peek((k, v) -> logger.info("sarlanga event: {}", v))
+                .mapValues(s -> s.toUpperCase())
+                .peek((k, v) -> logger.info("sarlanga event: {}", v))
+                .to(outputTopic, Produced.with(stringSerde, stringSerde));
+
+        return builder.build();
+    }
+
+    private static Topology buildDebuggingTopology(String inputTopic, String outputTopic) {
+        Serde<String> stringSerde = Serdes.String();
+
+        StreamsBuilder builder = new StreamsBuilder();
+
+        builder
+                .stream(inputTopic, Consumed.with(stringSerde, stringSerde))
+                .peek((k, v) -> logger.info("Simply logging: {}", v))
+                .mapValues(s -> s.toUpperCase())
+                .peek((k, v) -> logger.info("Simply transformed event: {}", v));
 
         return builder.build();
     }
@@ -89,6 +116,7 @@ public class KafkaStreamsApplication {
     public static void main(String[] args) throws Exception {
         final Properties config = getConfig();
         final String inputTopic = config.getProperty("input.topic.name");
+        final String inputTopicB = config.getProperty("input.topic-b.name");
         final String outputTopic = config.getProperty("output.topic.name");
 
         try (Util utility = new Util()) {
@@ -96,8 +124,9 @@ public class KafkaStreamsApplication {
             utility.createTopics(
                     config,
                     asList(
-                            new NewTopic(inputTopic, Optional.empty(), Optional.empty()),
-                            new NewTopic(outputTopic, Optional.empty(), Optional.empty())));
+                            new NewTopic(inputTopic, Optional.of(2), Optional.of((short)1)),
+                            new NewTopic(inputTopicB, Optional.of(2), Optional.of((short)1)),
+                            new NewTopic(outputTopic, Optional.of(2), Optional.empty())));
 
             try (Util.Randomizer rando = utility.startNewRandomizer(config, inputTopic)) {
 
@@ -109,7 +138,6 @@ public class KafkaStreamsApplication {
 
                 logger.info("Kafka Streams 101 App Started");
                 runKafkaStreams(kafkaStreams);
-
             }
         }
     }

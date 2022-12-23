@@ -45,6 +45,7 @@ docker_validate(){
 }
 
 docker_compose_up() {
+    stop_and_clean_docker_world
     COMPOSE_HTTP_TIMEOUT=360 USERID=$(id -u):$(id -g) docker-compose -f docker-compose.yml --project-name ${DOCKER_PROJECT_NAME} up -d --build "$@"
     docker_wait_until_healthy_or_none 0 180
     docker ps -a
@@ -62,7 +63,6 @@ stop_and_clean_docker_world() {
     docker-compose -f docker-compose.yml --project-name ${DOCKER_PROJECT_NAME} rm --force || true
     docker stop $(docker ps -a -q) || true
     docker rm $(docker ps -a -q) || true
-    remove_image
 }
 
 prepare_config_files() {
