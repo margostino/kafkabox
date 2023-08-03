@@ -1,1 +1,13 @@
 kcat -b localhost:9092 -t random-b-strings -P
+
+kcat -b localhost:9092 -t random-strings -P
+
+kcat -b localhost:9092 -t random-strings -C -o beginning
+kcat -b localhost:9092 -t random-strings -C -c1 -o beginning
+kcat -b localhost:9092 -t random-strings -C -c1
+kcat -b localhost:9092 -t random-b-strings -C -c1
+kcat -b localhost:9092 -t tall-random-strings -C -c1
+
+
+
+spark-submit --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.4.4 ./spark_producer.py
