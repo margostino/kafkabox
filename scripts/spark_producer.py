@@ -2,6 +2,9 @@ import os
 
 from pyspark.sql import SparkSession
 
+
+# https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html#writing-the-output-of-batch-queries-to-kafka
+
 jars_folder = "/Library/Frameworks/Python.framework/Versions/3.9/bin/jars"
 jars_list = [os.path.join(jars_folder, x) for x in os.listdir(jars_folder)]
 
