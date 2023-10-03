@@ -1,0 +1,63 @@
+{
+  "type": "record",
+  "name": "SensorEvent",
+  "namespace": "org.margostino.event",
+  "doc": "This event is a mock.",
+  "fields": [
+    {
+      "name": "metadata",
+      "type": {
+        "type": "record",
+        "name": "EventMetadata",
+        "namespace": "org.margostino.metadata",
+        "fields": [
+          {
+            "name": "event_id",
+            "type": {
+              "type": "string",
+              "avro.java.string": "String"
+            },
+            "doc": "UUID identifying this event. Can be used to detect duplicate events."
+          },
+          {
+            "name": "occurred_at",
+            "type": {
+              "type": "string",
+              "avro.java.string": "String"
+            },
+            "doc": "ISO-8601 timestamp indicating the point in time when the action that generated the message occurred."
+          },
+          {
+            "name": "event_type",
+            "type": {
+              "type": "enum",
+              "name": "EventType",
+              "symbols": [
+                "CREATED",
+                "UPDATED"
+              ]
+            },
+            "doc": "The type of event"
+          }
+        ]
+      },
+      "doc": "Standard message metadata header"
+    },
+    {
+      "name": "sensor",
+      "type": {
+        "type": "record",
+        "name": "Sensor",
+        "namespace": "org.margostino.sensor",
+        "fields": [
+          {
+            "name": "number",
+            "type": "int",
+            "doc": "random number"
+          }
+        ]
+      },
+      "doc": "Some randomness mock"
+    }
+  ]
+}

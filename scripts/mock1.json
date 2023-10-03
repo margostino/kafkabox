@@ -1,0 +1,10 @@
+{
+  "metadata": {
+    "event_id": "177864ba-6a80-4be1-8f26-4d5800fcecbe",
+    "occurred_at": "2023-07-24T12:20:24.938092Z",
+    "event_type": "CREATED"
+  },
+  "sensor": {
+    "number": 1
+  }
+}
